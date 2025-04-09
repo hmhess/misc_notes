@@ -39,12 +39,15 @@ The source COBOL or PL/I code is preserved entirely. DL/I logic is emulated usin
 
 In IMS, data is organized hierarchically:
 
+```
 CUSTOMER  
  └── ORDER  
-      └── LINEITEM  
+      └── LINEITEM
+```
 
 In IMSQL, segments become tables:
 
+```
 TABLE CUSTOMER (  
   CUSTOMER_ID INT PRIMARY KEY,  
   NAME VARCHAR  
@@ -58,7 +61,8 @@ TABLE ORDER (
 TABLE LINEITEM (  
   LINEITEM_ID INT PRIMARY KEY,  
   ORDER_ID INT REFERENCES ORDER  
-);  
+);
+```
 
 Parent-child relationships become foreign keys. Segment keys and access paths are preserved based on the DBD metadata.
 
@@ -70,11 +74,11 @@ Typical DL/I calls like `GU`, `GN`, `GNP`, `REPL`, `DLET` are translated into SQ
 
 Example COBOL call:
 
-CALL 'CBLTDLI' USING 'GN', pcb, segment, ioarea.  
+`CALL 'CBLTDLI' USING 'GN', pcb, segment, ioarea.  `
 
 Equivalent SQL logic (internally):  
 
-SELECT * FROM SEGMENT WHERE KEY = ?;  
+`SELECT * FROM SEGMENT WHERE KEY = ?;  `
 
 Translation is stateful and obeys IMS rules for key sensitivity, hierarchical path traversal, and segment selection.
 
@@ -129,12 +133,15 @@ In IMS, `GNP` retrieves the next child segment under a parent, regardless of typ
 
 Example hierarchy:
 
+```
 CUSTOMER  
  ├── ORDER  
- └── INVOICE  
+ └── INVOICE
+```
 
 COBOL logic:
 
+```
 CALL 'CBLTDLI' USING 'GU', pcb, cust-seg.  
 PERFORM UNTIL DONE  
    CALL 'CBLTDLI' USING 'GNP', pcb, child-seg  
@@ -146,7 +153,8 @@ PERFORM UNTIL DONE
      WHEN OTHER  
        SET DONE TO TRUE  
    END-EVALUATE  
-END-PERFORM  
+END-PERFORM
+```
 
 Raincode must replicate the exact traversal behavior, including segment type switching and segment order defined in the DBD.
 
@@ -186,12 +194,14 @@ This is error-prone and hard to manage.
 
 Instead, Raincode stores all segment instances in a **tagged binary format** within a single table:
 
+```
 CREATE TABLE SEGMENTS (  
   PARENT_ID     VARCHAR,  
   SEQ_NO        INTEGER,  
   SEG_TYPE      VARCHAR,  
   SEG_DATA      BYTEA  
-);  
+);
+```
 
 Traversal works by:
 
